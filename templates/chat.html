@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Place - Chat</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Toggle para sidebar -->
+        <input type="checkbox" id="sidebarToggle" class="sidebar-toggle-checkbox">
+        
+        <!-- Sidebar with contacts -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="current-user">
+                    <span id="currentUsername">Cargando...</span>
+                    <div class="header-btns">
+                        <label for="sidebarToggle" class="close-sidebar-btn">✕</label>
+                        <button class="logout-btn-small" onclick="logout()">Salir</button>
+                    </div>
+                </div>
+            </div>
+            <div class="contacts-list" id="contactsList">
+                <div class="no-contacts">Cargando contactos...</div>
+            </div>
+        </div>
+        
+        <!-- Chat area -->
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                <div class="header-left">
+                    <label for="sidebarToggle" class="sidebar-toggle-btn">☰</label>
+                    <div class="user-info">
+                        <div class="user-email" id="selectedUserName">Selecciona un contacto</div>
+                        <div id="selectedUserStatus" class="status offline"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="chatbox">
+                <div class="no-chat-selected">
+                    <div class="no-chat-icon">💬</div>
+                    <p>Selecciona un contacto para empezar a chatear</p>
+                </div>
+            </div>
+            
+            <div class="input-container" id="inputContainer" style="display: none;">
+                <div class="attachment-btns">
+                    <button class="attachment-btn" onclick="document.getElementById('imageInput').click()" title="Enviar imagen">📷</button>
+                    <button class="attachment-btn" onclick="document.getElementById('fileInput').click()" title="Enviar archivo">📎</button>
+                    <button class="attachment-btn" id="voiceBtn" onclick="toggleRecording()" title="Nota de voz">🎤</button>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect(event, 'image')">
+                <input type="file" id="fileInput" onchange="handleFileSelect(event, 'file')">
+                <input type="text" id="message" placeholder="Escribe un mensaje..." autocomplete="off">
+                <button id="sendBtn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para ver imágenes -->
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <span class="close">&times;</span>
+        <img id="modalImage" src="">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>
