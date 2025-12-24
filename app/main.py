@@ -23,16 +23,30 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Users in keys will ONLY be visible to users in the list
 # ===========================================
 PRIVATE_USERS = {
-    "Carolimiau": ["Dreft"],  # Carolimiau solo visible para Dreft
+    "Carolimiau": ["Dreft"],
+}
+
+# ===========================================
+# RESTRICTED VIEW CONFIGURATION
+# Format: {"username": ["can_see_1", "can_see_2"]}
+# Users in keys can ONLY see users in their list
+# ===========================================
+RESTRICTED_VIEW = {
+    "Carolimiau": ["Dreft"],  # Carolimiau solo puede ver a Dreft
 }
 
 
 def can_see_user(viewer_username: str, target_username: str) -> bool:
     """Check if viewer can see target user"""
-    # If target is not in private list, everyone can see them
+    # First: check if viewer has restricted view (can only see specific users)
+    if viewer_username in RESTRICTED_VIEW:
+        return target_username in RESTRICTED_VIEW[viewer_username]
+    
+    # Second: check if target is in private list (hidden from most)
     if target_username not in PRIVATE_USERS:
         return True
-    # If target is private, only allowed users can see them
+    
+    # Target is private, only allowed users can see them
     return viewer_username in PRIVATE_USERS[target_username]
 
 
