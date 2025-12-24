@@ -17,6 +17,36 @@ app = FastAPI(title="Safe Place - Multi-User Chat")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
+# ===========================================
+# PRIVATE USERS CONFIGURATION
+# Format: {"hidden_username": ["allowed_username1", "allowed_username2"]}
+# Users in keys will ONLY be visible to users in the list
+# ===========================================
+PRIVATE_USERS = {
+    "Carolimiau": ["Dreft"],  # Carolimiau solo visible para Dreft
+}
+
+
+def can_see_user(viewer_username: str, target_username: str) -> bool:
+    """Check if viewer can see target user"""
+    # If target is not in private list, everyone can see them
+    if target_username not in PRIVATE_USERS:
+        return True
+    # If target is private, only allowed users can see them
+    return viewer_username in PRIVATE_USERS[target_username]
+
+
+def filter_users_for_viewer(all_users: list, viewer_username: str, viewer_id: str) -> list:
+    """Filter user list based on visibility rules"""
+    filtered = []
+    for u in all_users:
+        if u["id"] == viewer_id:  # Skip self
+            continue
+        if can_see_user(viewer_username, u["username"]):
+            filtered.append(u)
+    return filtered
+
+
 # HTML Routes
 @app.get("/")
 @app.get("/login")
@@ -95,25 +125,24 @@ async def websocket_endpoint(websocket: WebSocket):
         "username": username
     })
 
-    # Send list of all registered users (online and offline)
+    # Send list of all registered users (filtered by visibility)
     all_users = await get_all_users()
     users_with_status = []
-    for u in all_users:
-        if u["id"] != user_id:  # Don't include self
-            users_with_status.append({
-                "id": u["id"],
-                "username": u["username"],
-                "online": u["id"] in connected_users
-            })
+    for u in filter_users_for_viewer(all_users, username, user_id):
+        users_with_status.append({
+            "id": u["id"],
+            "username": u["username"],
+            "online": u["id"] in connected_users
+        })
     
     await websocket.send_json({
         "type": "users_list",
         "users": users_with_status
     })
 
-    # Notify others that this user is online
+    # Notify others that this user is online (only if they can see this user)
     for uid, info in connected_users.items():
-        if uid != user_id:
+        if uid != user_id and can_see_user(info["username"], username):
             try:
                 await info["websocket"].send_json({
                     "type": "user_online",
@@ -184,16 +213,17 @@ async def websocket_endpoint(websocket: WebSocket):
             del connected_users[user_id]
             print(f"[WS] {username} desconectado. Total: {len(connected_users)}")
             
-            # Notify others that user went offline
+            # Notify others that user went offline (only if they can see this user)
             for uid, info in connected_users.items():
-                try:
-                    await info["websocket"].send_json({
-                        "type": "user_offline",
-                        "user_id": user_id,
-                        "username": username
-                    })
-                except:
-                    pass
+                if can_see_user(info["username"], username):
+                    try:
+                        await info["websocket"].send_json({
+                            "type": "user_offline",
+                            "user_id": user_id,
+                            "username": username
+                        })
+                    except:
+                        pass
 
 
 def start():
